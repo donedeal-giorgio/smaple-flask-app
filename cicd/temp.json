@@ -1,0 +1,164 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "",
+  "Parameters": {
+    "RepoName": {
+      "Description": "The repository name",
+      "Type": "String"
+    },
+    "VPC": {
+      "Description": "A valid vpc id",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "IAMUsername": {
+      "Description": "IAM username",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "MyCodeBuild": {
+      "Type": "AWS::CodeBuild::Project",
+      "Properties": {
+        "Artifacts": {
+          "Type": "no_artifacts"
+        },
+        "BadgeEnabled": false,
+        "Description": "Build a simple app and push it to ECR docker repo",
+        "LogsConfig": {
+          "CloudWatchLogs": {
+            "Status": "ENABLED",
+            "GroupName": "DeploymentLogs",
+            "StreamName": {
+              "Ref": "AWS::StackName"
+            }
+          }
+        },
+        "Environment": {
+          "Type": "LINUX_CONTAINER",
+          "PrivilegedMode": true,
+          "ComputeType": "BUILD_GENERAL1_SMALL",
+          "Image": "aws/codebuild/standard:3.0",
+          "EnvironmentVariables": [
+            {
+              "Name": "AWS_DEFAULT_REGION",
+              "Value": {
+                "Ref": "AWS::Region"
+              }
+            },
+            {
+              "Name": "AWS_ACCOUNT_ID",
+              "Value": {
+                "Ref": "AWS::AccountId"
+              }
+            },
+            {
+              "Name": "IMAGE_REPO_NAME",
+              "Value": {
+                "Ref": "RepoName"
+              }
+            },
+            {
+              "Name": "IMAGE_TAG",
+              "Value": "latest"
+            }
+          ]
+        },
+        "Name": "MyTestProject",
+        "ServiceRole": {
+          "Fn::GetAtt": [
+            "BuildRole",
+            "Arn"
+          ]
+        },
+        "Source": {
+          "Type": "CODECOMMIT",
+          "BuildSpec": "buildspec.yml",
+          "GitCloneDepth": 1,
+          "Location": {
+            "Fn::Join": [
+              "",
+              [
+                "https://git-codecommit.",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ".amazonaws.com/v1/repos/",
+                {
+                  "Ref": "RepoName"
+                }
+              ]
+            ]
+          }
+        },
+        "SourceVersion": "refs/heads/master"
+      }
+    },
+    "BuildRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": [
+            "${Stack}-CodeBuildExecRole",
+            {
+              "Stack": {
+                "Ref": "AWS::StackName"
+              }
+            }
+          ]
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "codebuild.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "ManagedPolicyArns" : [{"Ref" : "CodeBuildPolicy" }]
+      }
+    },
+    "CodeBuildPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Description": "A policy for code buikd",
+      "Properties": {
+        "ManagedPolicyName": {
+          "Fn::Sub": [
+            "${Stack}-CodeBuildExecPolicy",
+            {
+              "Stack": {
+                "Ref": "AWS::StackName"
+              }
+            }
+          ]
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "VisualEditor0",
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogStream",
+                "codecommit:*",
+                "ecr:*",
+                "logs:CreateLogGroup",
+                "logs:PutLogEvents",
+                "s3:*"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

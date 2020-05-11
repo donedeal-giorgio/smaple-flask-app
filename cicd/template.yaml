@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+Resources:
+  CodeBuild:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      ServiceRole: ""
+      Artifacts:
+      Source:
+      Environment:

@@ -1,0 +1,58 @@
+<html>
+<head>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>Movie Site</title>
+</head>
+<body>
+<h2>Add Movie</h2>
+
+<form method="POST" action="/">
+    <div class="form-group">
+        <label for="inputMovie">Movie</label>
+        <input name="title" type="text" class="form-control" id="inputMovie" aria-describedby="emailHelp"
+               placeholder="Add movie">
+    </div>
+    <button type="submit" class="btn btn-primary" value="Add">Submit</button>
+</form>
+
+<hr/>
+
+<h2>Movies</h2>
+<table class="table table-striped">
+    <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Edit</th>
+        <th scope="col">Delete</th>
+    </tr>
+    {% for movie in movies %}
+        <tr>
+            <td>
+                {{ movie.title }}
+            </td>
+            <td>
+                <form method="POST" action="./update" style="display: inline">
+                    <input type="hidden" value="{{ movie.title }}" name="oldtitle">
+                    <input type="text" value="{{ movie.title }}" name="newtitle">
+                    <input class="btn btn-warning" type="submit" value="Update">
+                </form>
+            </td>
+            <td>
+                <form method="POST" action="./delete" style="display: inline">
+                    <input type="hidden" value="{{ movie.title }}" name="title">
+                    <input class="btn btn-warning" type="submit" value="Delete">
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+</body>
+
+<form method="GET" action="./delete_all" style="display: inline">
+    <input class="btn btn-primary btn-danger" type="submit" value="Delete all">
+</form>
+
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"
+        integrity="sha384-6khuMg9gaYr5AxOqhkVIODVIvm9ynTT5J4V1cfthmT+emCG6yVmEZsRHdxlotUnm"
+        crossorigin="anonymous"></script>
+</html>
