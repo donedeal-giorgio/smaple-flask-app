@@ -1,10 +1,177 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description:
+Description: "flask-crud-app"
 Resources:
-  CodeBuild:
-    Type: "AWS::CodeBuild::Project"
+  ArtifactStore:
+    Type: AWS::S3::Bucket
     Properties:
-      ServiceRole: ""
+      BucketName:
+        Fn::Join:
+          - ''
+          - - cicd-
+            - Ref: AWS::AccountId
+      VersioningConfiguration:a7af0b6185e414fc34008e4ce744ba9b392a60b7
+        Status: Enabled
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  CodeBuildRole:
+    Description: "Allow code build"
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: "CodeBuildPolicy"
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogStream
+                  - codecommit:*
+                  - ecr:*
+                  - logs:CreateLogGroup
+                  - logs:PutLogEvents
+                  - s3:*
+                Effect: Allow
+                Resource: "*"
+  PipelineRoleAllowS3AccessRole:
+    Description: "Allow code pipeline access to s3"
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: "s3Access"
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - s3:GetObject*
+                  - s3:GetBucket*
+                  - s3:List*
+                  - s3:DeleteObject*
+                  - s3:PutObject*
+                  - s3:Abort*
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - iam:PassRole
+                Effect: Allow
+                Resource:
+                  - Fn::GetAtt:
+                      - ArtifactStore
+                      - Arn
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt:
+                            - ArtifactStore
+                            - Arn
+                        - "/*"
+            Version: '2012-10-17'
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: MyProject
+      ServiceRole:
+        Fn::GetAtt:
+          - CodeBuildRole
+          - Arn
       Artifacts:
-      Source:
+        Type: NO_ARTIFACTS
       Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:1.0
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: "buildspec.yml"
+        GitCloneDepth: 1
+  #      Triggers:
+  #        Webhook: true
+  #        FilterGroups:
+  #          - - Type: EVENT
+  #              Pattern: PULL_REQUEST_CREATED,PULL_REQUEST_UPDATED
+  #            - Type: BASE_REF
+  #              Pattern: ^refs/heads/master$
+  #              ExcludeMatchedPattern: false
+  #            - Type: ACTOR_ACCOUNT_ID
+  #              Pattern: 12345
+  #              ExcludeMatchedPattern: true
+  #          - - Type: EVENT
+  #              Pattern: PUSH
+  #            - Type: HEAD_REF
+  #              Pattern: ^refs/heads/.*
+  #            - Type: FILE_PATH
+  #              Pattern: READ_ME
+  #              ExcludeMatchedPattern: true
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location:
+          Ref: ArtifactStore
+        Type: S3
+      Name: cicd-pipeline
+      RoleArn:
+        Fn::GetAtt:
+          - PipelineRoleAllowS3AccessRole
+          - Arn
+      Stages:
+        - Actions:
+            - ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: '1'
+              Configuration:
+                Owner: donedeal-giorgio
+                Repo: smaple-flask-app
+                Branch: master
+                OAuthToken: ""
+                PollForSourceChanges: false
+              Name: MasterCommit
+              OutputArtifacts:
+                - Name: source
+              RunOrder: 1
+          Name: Source
+        - Actions:
+            - ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName:
+                  Ref: CodeBuildProject
+              InputArtifacts:
+                - Name: source
+              Name: DockerBuildImages
+              RoleArn:
+                Fn::GetAtt:
+                  - CodeBuildRole
+                  - Arn
+              RunOrder: 1
+          Name: Build
+  AppPipelineWebhook:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: ""
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      TargetPipeline: !Ref CodePipeline
+      TargetAction: SourceAction
+      Name: AppPipelineWebhook
+      TargetPipelineVersion: !GetAtt CodePipeline.Version
+      RegisterWithThirdParty: true
