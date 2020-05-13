@@ -6,12 +6,9 @@ Resources:
     Properties:
       BucketName:
         Fn::Join:
-          - ''
-          - - cicd-
+          - '-'
+          - - cicd
             - Ref: AWS::AccountId
-      VersioningConfiguration:a7af0b6185e414fc34008e4ce744ba9b392a60b7
-        Status: Enabled
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
   CodeBuildRole:
@@ -39,7 +36,7 @@ Resources:
                   - s3:*
                 Effect: Allow
                 Resource: "*"
-  PipelineRoleAllowS3AccessRole:
+  CodePipelineServiceRole:
     Description: "Allow code pipeline access to s3"
     Type: AWS::IAM::Role
     Properties:
@@ -76,6 +73,11 @@ Resources:
                             - ArtifactStore
                             - Arn
                         - "/*"
+                  - Fn::Join:
+                      - ''
+                      - - Fn::GetAtt:
+                            - CodeBuildProject
+                            - Arn
             Version: '2012-10-17'
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
@@ -86,33 +88,15 @@ Resources:
           - CodeBuildRole
           - Arn
       Artifacts:
-        Type: NO_ARTIFACTS
+        Type: CODEPIPELINE
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:1.0
       Source:
         Type: CODEPIPELINE
-        BuildSpec: "buildspec.yml"
+        BuildSpec: "cicd/buildspec.yml"
         GitCloneDepth: 1
-  #      Triggers:
-  #        Webhook: true
-  #        FilterGroups:
-  #          - - Type: EVENT
-  #              Pattern: PULL_REQUEST_CREATED,PULL_REQUEST_UPDATED
-  #            - Type: BASE_REF
-  #              Pattern: ^refs/heads/master$
-  #              ExcludeMatchedPattern: false
-  #            - Type: ACTOR_ACCOUNT_ID
-  #              Pattern: 12345
-  #              ExcludeMatchedPattern: true
-  #          - - Type: EVENT
-  #              Pattern: PUSH
-  #            - Type: HEAD_REF
-  #              Pattern: ^refs/heads/.*
-  #            - Type: FILE_PATH
-  #              Pattern: READ_ME
-  #              ExcludeMatchedPattern: true
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -120,10 +104,10 @@ Resources:
         Location:
           Ref: ArtifactStore
         Type: S3
-      Name: cicd-pipeline
+      Name: sample-flask-app-pipeline
       RoleArn:
         Fn::GetAtt:
-          - PipelineRoleAllowS3AccessRole
+          - CodePipelineServiceRole
           - Arn
       Stages:
         - Actions:
@@ -134,9 +118,9 @@ Resources:
                 Version: '1'
               Configuration:
                 Owner: donedeal-giorgio
-                Repo: smaple-flask-app
+                Repo: sample-flask-app
                 Branch: master
-                OAuthToken: ""
+                OAuthToken: "721a371bcb4a427eec5497f4bad628b486939f45"
                 PollForSourceChanges: false
               Name: MasterCommit
               OutputArtifacts:
@@ -154,11 +138,7 @@ Resources:
                   Ref: CodeBuildProject
               InputArtifacts:
                 - Name: source
-              Name: DockerBuildImages
-              RoleArn:
-                Fn::GetAtt:
-                  - CodeBuildRole
-                  - Arn
+              Name: SampleCodeBuild
               RunOrder: 1
           Name: Build
   AppPipelineWebhook:
@@ -166,12 +146,12 @@ Resources:
     Properties:
       Authentication: GITHUB_HMAC
       AuthenticationConfiguration:
-        SecretToken: ""
+        SecretToken: "721a371bcb4a427eec5497f4bad628b486939f45"
       Filters:
         - JsonPath: "$.ref"
           MatchEquals: refs/heads/{Branch}
       TargetPipeline: !Ref CodePipeline
-      TargetAction: SourceAction
+      TargetAction: MasterCommit
       Name: AppPipelineWebhook
       TargetPipelineVersion: !GetAtt CodePipeline.Version
       RegisterWithThirdParty: true
