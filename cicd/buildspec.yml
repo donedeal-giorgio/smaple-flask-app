@@ -10,6 +10,8 @@ phases:
       - aws s3 ls
       - pip install -r requirements.txt
       - pip install -e .
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
   pre_build:
     commands:
       - echo Entering pre_build phase...
