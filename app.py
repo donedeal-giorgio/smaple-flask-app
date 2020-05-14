@@ -4,9 +4,15 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
-def create_app() -> Flask:
+def create_app(testing_config: dict = False) -> Flask:
     app = Flask(__name__, instance_relative_config=False)
-    app.config.from_object('config.Config')
+
+    if not testing_config:
+        app.config.from_object('config.Config')
+    else:
+        print("testing")
+        app.config.from_mapping(testing_config)
+
     db.init_app(app)
 
     with app.app_context():
