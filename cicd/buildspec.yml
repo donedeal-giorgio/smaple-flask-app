@@ -2,7 +2,12 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo Entering install phase...
+      - ptyhon --version
+      - which pip
+      - pip --version
+      - cwd
+      - ls
+      - aws s3 ls
   pre_build:
     commands:
       - echo Entering pre_build phase...
