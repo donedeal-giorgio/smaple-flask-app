@@ -5,9 +5,11 @@ phases:
       - python --version
       - which pip
       - pip --version
-      - cwd
+      - pwd
       - ls
       - aws s3 ls
+      - pip install -r requirements.txt
+      - pip install -e .
   pre_build:
     commands:
       - echo Entering pre_build phase...
