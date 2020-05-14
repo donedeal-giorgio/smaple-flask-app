@@ -2,7 +2,7 @@ version: 0.2
 phases:
   install:
     commands:
-      - ptyhon --version
+      - python --version
       - which pip
       - pip --version
       - cwd
