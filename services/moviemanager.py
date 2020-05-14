@@ -2,6 +2,11 @@ from models import Movie, db
 from typing import List
 
 
+def get_movie(title: str) -> Movie:
+    movie = Movie.query.filter_by(title=title).first()
+    return movie
+
+
 def add_movie(title: str) -> None:
     movie = Movie(title=title)
     db.session.add(movie)
