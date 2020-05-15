@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "flask-crud-app"
 Parameters:
   GithubSecret:
-    # ALL RESOURCES SHOULD HAVE A TAG WITH THIS STRING
     Description: "The github secret."
     Type: String
     Default: "VPC Public and Private with NAT"
