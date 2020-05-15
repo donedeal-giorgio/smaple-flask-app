@@ -5,6 +5,11 @@ db = SQLAlchemy()
 
 
 def create_app(testing_config: dict = False) -> Flask:
+    """
+    Create a flask App
+    :param testing_config:
+    :return:
+    """
     app = Flask(__name__, instance_relative_config=False)
 
     if not testing_config:
