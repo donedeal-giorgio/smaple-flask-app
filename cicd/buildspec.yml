@@ -16,7 +16,7 @@ phases:
     commands:
       - echo Entering pre_build phase...
       - pytest ./tests
-      - pylint ./sercices
+      - pylint ./services
       - env
   build:
     commands:
