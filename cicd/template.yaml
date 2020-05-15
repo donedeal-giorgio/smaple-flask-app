@@ -7,6 +7,10 @@ Parameters:
     Type: String
     Default: "VPC Public and Private with NAT"
 Resources:
+  DockerRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+        RepositoryName: "sample-flask-app"
   ArtifactStore:
     Type: AWS::S3::Bucket
     Properties:
@@ -106,7 +110,7 @@ Resources:
             - Name: AWS_ACCOUNT_ID
               Value: !Ref AWS::AccountId
             - Name: IMAGE_REPO_NAME
-              Value: sample-flask-app
+              Value: !Ref DockerRepository
       Source:
         Type: CODEPIPELINE
         BuildSpec: "cicd/buildspec.yml"
