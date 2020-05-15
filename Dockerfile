@@ -1,7 +1,6 @@
-FROM python:3.6
+FROM python:3.6-alpine
 
-# install postgres client and python-dev
-RUN apt-get update && apt-get install -y postgresql-client python3-dev
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev
 
 WORKDIR /usr/src/app
 
