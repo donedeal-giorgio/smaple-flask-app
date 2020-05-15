@@ -3,11 +3,6 @@ phases:
   install:
     commands:
       - python --version
-      - which pip
-      - pip --version
-      - pwd
-      - ls
-      - aws s3 ls
       - pip install -r requirements.txt
       - pip install -e .
       - echo Logging in to Amazon ECR...
@@ -27,7 +22,6 @@ phases:
   post_build:
     commands:
       - echo Entering post_build phase...
-      - echo Build completed on `date`
-      - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - echo Build completed on `date`
