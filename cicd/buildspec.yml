@@ -15,11 +15,15 @@ phases:
   pre_build:
     commands:
       - echo Entering pre_build phase...
+      - pytest ./tests
+      - pylint ./sercices
       - env
   build:
     commands:
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - echo Entering build phase...
   post_build:
     commands:
+      -
       - echo Entering post_build phase...
       - echo Build completed on `date`
